@@ -1,0 +1,3 @@
+# Dépendances de la collecte de données, en ligne de commande uniquement.
+#   pip install -r requirements.txt -r requirements-collecte.txt
+google-ads==31.4.1    # API Google Ads v25 — exige un token Basic Access

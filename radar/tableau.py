@@ -158,7 +158,9 @@ def _e(t):
 
 def rendre_tableau(scores: List[ScoreDepartement], metier: Metier,
                    hypotheses: Hypotheses, donnees_fictives: bool = False,
-                   date: Optional[datetime.date] = None) -> str:
+                   date: Optional[datetime.date] = None,
+                   entete_html: str = "") -> str:
+    """`entete_html` est inséré juste après <body>, pour la navigation du site."""
     date = date or datetime.date.today()
     retenus = [s for s in scores if s.verdict not in VERDICTS_ELIMINATOIRES]
     marge_totale = sum(s.marge_mensuelle_eur or 0 for s in retenus)
@@ -252,7 +254,7 @@ def rendre_tableau(scores: List[ScoreDepartement], metier: Metier,
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Radar {metier} — classement des départements</title>
-<style>{css}</style></head><body><div class="enveloppe">
+<style>{css}</style></head><body>{entete}<div class="enveloppe">
 <header>
   <p class="sur">Radar d'opportunité Google Ads — Celexia</p>
   <h1>{metier} · classement des 96 départements</h1>
@@ -285,7 +287,7 @@ def rendre_tableau(scores: List[ScoreDepartement], metier: Metier,
      n'apparaissent ni dans le Keyword Planner ni dans l'API Google Ads.</p>
 </div>
 </div><script>{js}</script></body></html>""".format(
-        css=_CSS, js=_JS, metier=_e(metier.libelle),
+        css=_CSS, js=_JS, entete=entete_html, metier=_e(metier.libelle),
         conv=hypotheses.taux_conversion, prix=hypotheses.prix_revente_lead_eur,
         part=hypotheses.part_clics_captee, minart=hypotheses.min_artisans,
         seuil=hypotheses.marge_mensuelle_minimale_eur, avert=avert,

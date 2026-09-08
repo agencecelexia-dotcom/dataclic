@@ -1,3 +1,6 @@
-# Ajouté au fur et à mesure. Le socle actuel (geo + intention) n'a aucune dépendance.
-google-ads==31.4.1        # API Google Ads v25 — nécessite un token Basic Access
-requests>=2.31            # API Sirene INSEE
+# Dépendances du site déployé. Volontairement minimales : le paquet google-ads
+# embarque le code généré de toutes les versions d'API (v21 à v25) et pèse
+# plusieurs centaines de mégaoctets décompressé, ce qui ferait dépasser la
+# limite de taille d'une fonction serverless. Il n'est nécessaire que pour la
+# collecte en ligne de commande — voir requirements-collecte.txt.
+flask>=3.0,<4

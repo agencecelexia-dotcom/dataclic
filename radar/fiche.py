@@ -218,7 +218,8 @@ def _tag_intention(mot_cle: str) -> str:
     return '<span class="{}">{}</span>'.format(classe, libelle)
 
 
-def rendre_html(d: DonneesFiche) -> str:
+def rendre_html(d: DonneesFiche, entete_html: str = "") -> str:
+    """`entete_html` est inséré juste après <body>, pour la navigation du site."""
     dep = d.departement
     date = d.date_extraction or datetime.date.today()
     lignes = sorted(d.mots_cles, key=lambda m: -m.volume_mensuel_moyen)
@@ -315,7 +316,7 @@ def rendre_html(d: DonneesFiche) -> str:
 <html lang="fr"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1">
 <title>Marché {metier} — {dep} ({code})</title>
-<style>{css}</style></head><body><div class="page">
+<style>{css}</style></head><body>{entete}<div class="page">
 {avert}{repli}
 <header>
   <p class="sur">Étude de marché locale — Celexia</p>
@@ -335,7 +336,7 @@ visible à ce moment-là.</p>
 {concurrence}
 <div class="pied">{notes}</div>
 </div></body></html>""".format(
-        css=_CSS, avert=avert, repli=repli,
+        css=_CSS, entete=entete_html, avert=avert, repli=repli,
         metier=_e(d.metier.libelle), dep=_e(dep.nom), code=_e(dep.code_insee),
         region=_e(dep.region), date=date.strftime("%d/%m/%Y"),
         cartes="".join(cartes), saison=saison, rangs="".join(rangs),

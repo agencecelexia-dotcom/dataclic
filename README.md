@@ -27,11 +27,55 @@ données synthétiques plausibles.
 | `motscles` | intentions, poids, mots-clés à exclure | aucun |
 | `artisans` | recensement INSEE par département | clé INSEE |
 | `verifier` | diagnostic des accès | aucun |
+| `site` | serveur web local | aucun |
 
 Les sorties vont dans `out/`. Le tableau de bord et la fiche sont des fichiers
 HTML **autonomes** : aucune ressource externe, graphiques en SVG inline, tri et
 filtres en JavaScript inline. Ils s'ouvrent hors ligne, survivent à un envoi par
 mail et s'impriment en PDF depuis le navigateur.
+
+## Le site
+
+```bash
+pip install -r requirements.txt
+./radar.py site                              # http://127.0.0.1:5000
+RADAR_MOT_DE_PASSE=... ./radar.py site
+```
+
+Trois pages : choix du département (grille des 96, groupés par région, filtre
+instantané), fiche de marché, classement. Les rendus sont ceux de
+`radar/fiche.py` et `radar/tableau.py` — le site ne réimplémente rien, il ajoute
+une navigation et un routage.
+
+### Déploiement Vercel
+
+`app.py` à la racine expose l'application WSGI ; Vercel le détecte
+automatiquement, sans `vercel.json`. Variables d'environnement à définir dans le
+projet Vercel :
+
+| Variable | Rôle |
+|---|---|
+| `RADAR_MOT_DE_PASSE` | **obligatoire en ligne.** Authentification HTTP Basic |
+| `INSEE_API_KEY` | bascule le site en données réelles |
+| `GOOGLE_ADS_CUSTOMER_ID` | idem |
+| `RADAR_TTL_CACHE` | durée du cache en secondes (défaut 3600) |
+| `RADAR_FORCER_DEMO` | force le mode démonstration |
+
+Sans `INSEE_API_KEY` **et** `google-ads.yaml`, le site tourne en mode
+démonstration et l'affiche dans un bandeau sur chaque page : les chiffres sont
+synthétiques et ne doivent pas être montrés à un artisan.
+
+**Deux limites à connaître :**
+
+- **Le cache est en mémoire.** Chaque instance serverless froide repart d'un
+  cache vide. Il amortit les rechargements d'une même session, pas du trafic.
+  Sans persistance — écartée à dessein — c'est le maximum possible.
+- **`requirements.txt` ne contient que Flask.** Le paquet `google-ads` embarque
+  le code généré des versions d'API v21 à v25 et pèse plusieurs centaines de
+  mégaoctets décompressé, au-delà de la limite de taille d'une fonction
+  serverless. Il est isolé dans `requirements-collecte.txt`, pour la ligne de
+  commande. **La collecte de données réelles se fait donc en local, pas sur
+  Vercel** ; le site sert ce que la collecte a produit.
 
 ## Ce que le scoring encode
 
@@ -135,8 +179,10 @@ balayage complet produirait des comptages faux **sans lever d'erreur**.
 ## Architecture
 
 ```
-radar.py                    point d'entrée unique
+radar.py                    point d'entrée ligne de commande
+app.py                      point d'entrée WSGI (détecté par Vercel)
 radar/
+  web.py                    application Flask : routage, cache, mot de passe
   geo.py                    96 départements ↔ geo targets Google
   insee_departements.py     table de référence INSEE (figée)
   metiers.py                config par métier : mots-clés, codes NAF
@@ -168,6 +214,7 @@ infrastructure à maintenir.
 | Fiche de closing HTML | faite |
 | Tableau de bord HTML | fait |
 | Client Sirene INSEE | écrit, à valider avec la clé (`artisans --verifier`) |
+| Site web + déploiement Vercel | fait |
 | Client Google Ads | écrit, **non validé** — en attente de Basic Access |
 
 ## Environnement

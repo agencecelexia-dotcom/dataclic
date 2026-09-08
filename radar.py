@@ -7,6 +7,7 @@
     ./radar.py motscles                     intentions et mots-clés à exclure
     ./radar.py artisans                     recensement INSEE (clé requise)
     ./radar.py verifier                     état des accès
+    ./radar.py site                         serveur local sur :5000
 
 Toutes les commandes acceptent --demo pour tourner sans aucun accès API.
 """
@@ -334,6 +335,25 @@ def cmd_verifier(a):
     return 0 if ok else 1
 
 
+# ---------------------------------------------------------------------- site
+
+def cmd_site(a):
+    try:
+        from radar.web import app as application, mode_reel
+    except ImportError:
+        print(rouge("Flask absent : pip install -r requirements.txt"), file=sys.stderr)
+        return 2
+    titre("Serveur local")
+    print("  mode      {}".format(vert("données réelles") if mode_reel()
+                                  else ambre("démonstration")))
+    print("  accès     {}".format(
+        vert("protégé par mot de passe") if os.environ.get("RADAR_MOT_DE_PASSE")
+        else ambre("ouvert — définis RADAR_MOT_DE_PASSE avant de déployer")))
+    print("\n  " + bleu("http://127.0.0.1:{}".format(a.port)) + "\n")
+    application.run(host=a.hote, port=a.port, debug=a.debug)
+    return 0
+
+
 # ----------------------------------------------------------------------- CLI
 
 def main(argv=None):
@@ -379,6 +399,12 @@ def main(argv=None):
 
     ve = sous.add_parser("verifier", help="état des accès")
     ve.set_defaults(fonction=cmd_verifier)
+
+    si = sous.add_parser("site", help="serveur web local")
+    si.add_argument("--port", type=int, default=5000)
+    si.add_argument("--hote", default="127.0.0.1")
+    si.add_argument("--debug", action="store_true")
+    si.set_defaults(fonction=cmd_site)
 
     a = p.parse_args(argv)
     if not a.commande:

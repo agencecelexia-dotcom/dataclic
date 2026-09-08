@@ -21,11 +21,16 @@ GEOTARGETS_URL = os.environ.get(
     "https://developers.google.com/static/google-ads/api/data/geo/geotargets-2026-08-12.csv",
 )
 
-CACHE_PATH = os.path.join(
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
-    "data",
-    "geotargets_raw.csv",
-)
+_RACINE = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+# Cache du CSV brut de Google : 23 Mo, non versionné, re-téléchargeable.
+CACHE_PATH = os.path.join(_RACINE, "data", "geotargets_raw.csv")
+
+# Référentiel dérivé : 96 lignes, quelques kilo-octets, versionné. C'est lui que
+# lit l'outil au quotidien. Le CSV brut n'est nécessaire que pour le régénérer,
+# ce qui évite un téléchargement de 23 Mo au démarrage — impossible en
+# environnement serverless, dont le système de fichiers est en lecture seule.
+REFERENTIEL_PATH = os.path.join(_RACINE, "data", "departements_geotargets.csv")
 
 
 class Departement(NamedTuple):
@@ -57,8 +62,33 @@ def telecharger_geotargets(force: bool = False) -> str:
 def charger_departements(chemin: Optional[str] = None) -> List[Departement]:
     """Renvoie les 96 départements métropolitains avec leur geo target Google.
 
+    Lit le référentiel dérivé versionné. S'il est absent, le reconstruit depuis
+    le CSV brut de Google, qu'il télécharge au besoin.
+    """
+    if chemin is None and os.path.exists(REFERENTIEL_PATH):
+        return _lire_referentiel()
+    return regenerer(chemin)
+
+
+def _lire_referentiel() -> List[Departement]:
+    with io.open(REFERENTIEL_PATH, newline="", encoding="utf-8") as f:
+        departements = [Departement(l["code_insee"], l["nom"], l["criteria_id"],
+                                    l["region"])
+                        for l in csv.DictReader(f)]
+    if len(departements) != len(DEPARTEMENTS):
+        raise RuntimeError(
+            "Référentiel corrompu : {} lignes au lieu de {}. "
+            "Régénérer avec radar.geo.regenerer().".format(
+                len(departements), len(DEPARTEMENTS)))
+    return departements
+
+
+def regenerer(chemin: Optional[str] = None, ecrire: bool = True) -> List[Departement]:
+    """Reconstruit le référentiel depuis le CSV brut de Google.
+
     Lève une erreur si le compte n'est pas exactement 96 : cela signifierait que
     Google a modifié sa nomenclature et que le reste du pipeline est à revalider.
+    À relancer quand Google publie un nouveau CSV daté (voir GEOTARGETS_URL).
     """
     chemin = chemin or telecharger_geotargets()
 
@@ -99,7 +129,15 @@ def charger_departements(chemin: Optional[str] = None) -> List[Departement]:
             "Départements INSEE absents du CSV Google : {}".format(manquants)
         )
 
-    return [trouves[code] for code in sorted(trouves, key=_ordre_departement)]
+    departements = [trouves[code] for code in sorted(trouves, key=_ordre_departement)]
+    if ecrire:
+        os.makedirs(os.path.dirname(REFERENTIEL_PATH), exist_ok=True)
+        with io.open(REFERENTIEL_PATH, "w", newline="", encoding="utf-8") as f:
+            w = csv.writer(f)
+            w.writerow(["code_insee", "nom", "criteria_id", "region"])
+            for d in departements:
+                w.writerow([d.code_insee, d.nom, d.criteria_id, d.region])
+    return departements
 
 
 def _ordre_departement(code: str) -> tuple:
