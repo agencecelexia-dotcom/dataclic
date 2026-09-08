@@ -1,0 +1,3 @@
+# Ajouté au fur et à mesure. Le socle actuel (geo + intention) n'a aucune dépendance.
+google-ads==31.4.1        # API Google Ads v25 — nécessite un token Basic Access
+requests>=2.31            # API Sirene INSEE

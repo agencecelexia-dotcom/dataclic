@@ -1,0 +1,21 @@
+# Copier en google-ads.yaml (ignoré par git) et renseigner.
+# Doc : https://developers.google.com/google-ads/api/docs/client-libs/python/configuration
+
+# Jeton de 22 caractères, API Center du MCC : https://ads.google.com/aw/apicenter
+# Doit être au niveau Basic Access, permissible use
+# « Researching keywords and recommendations ».
+developer_token: INSERER_ICI
+
+# Identifiants OAuth2 « Application de bureau » du projet Google Cloud.
+client_id: INSERER_ICI
+client_secret: INSERER_ICI
+
+# Généré par examples/authentication/generate_user_credentials.py du dépôt
+# googleads/google-ads-python. Passer l'écran de consentement en Production,
+# sinon le refresh token expire au bout de 7 jours.
+refresh_token: INSERER_ICI
+
+# Le MCC, sans tirets. Facultatif en accès direct à un compte.
+login_customer_id: INSERER_ICI
+
+use_proto_plus: True

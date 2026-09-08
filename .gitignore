@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+
+# Secrets — ne jamais committer
+google-ads.yaml
+.env
+
+# Sorties de l'outil
+out/
+*.csv
+!data/*.csv
+
+# Cache du CSV geo targets de Google : 23 Mo, re-téléchargé au besoin.
+# Doit rester APRÈS la règle !data/*.csv, sinon il serait ré-autorisé.
+data/geotargets_raw.csv
